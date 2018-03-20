@@ -8,10 +8,7 @@ pragma solidity ^0.4.18;
 // Name        : Stezy Token
 // Total supply: 500000000
 // Decimals    : 18
-//
-// Enjoy.
-//
-// (c) by Moritz Neto with BokkyPooBah / Bok Consulting Pty Ltd Au 2017. The MIT Licence.
+
 // ----------------------------------------------------------------------------
 
 
