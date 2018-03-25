@@ -8,7 +8,9 @@ pragma solidity ^0.4.18;
 // Name        : Stezy Token
 // Total supply: 500000000
 // Decimals    : 18
-
+//
+// Enjoy.
+//
 // ----------------------------------------------------------------------------
 
 
@@ -53,16 +55,6 @@ contract ERC20Interface {
 
 
 // ----------------------------------------------------------------------------
-// Contract function to receive approval and execute function in one call
-//
-// Borrowed from MiniMeToken
-// ----------------------------------------------------------------------------
-contract ApproveAndCallFallBack {
-    function receiveApproval(address from, uint256 tokens, address token, bytes data) public;
-}
-
-
-// ----------------------------------------------------------------------------
 // Owned contract
 // ----------------------------------------------------------------------------
 contract Owned {
@@ -100,10 +92,10 @@ contract StezyToken is ERC20Interface, Owned, SafeMath {
     string public symbol;
     string public  name;
     uint8 public decimals;
-    uint public _totalSupply;
+    uint public totalSupply;
 
     mapping(address => uint) balances;
-    mapping(address => mapping(address => uint)) allowed;
+    mapping(address => mapping(address => uint)) allowance;
 
 
     // ------------------------------------------------------------------------
@@ -113,9 +105,9 @@ contract StezyToken is ERC20Interface, Owned, SafeMath {
         symbol = "STZ";
         name = "Stezy Token";
         decimals = 18;
-        _totalSupply = 500000000000000000000000000;
-        balances[0x5A86f0cafD4ef3ba4f0344C138afcC84bd1ED222] = _totalSupply;
-        Transfer(address(0), 0x5A86f0cafD4ef3ba4f0344C138afcC84bd1ED222, _totalSupply);
+        totalSupply = 500000000000000000000000000;
+        balances[msg.sender] = totalSupply;
+        Transfer(address(0), msg.sender, totalSupply);
     }
 
 
@@ -123,7 +115,7 @@ contract StezyToken is ERC20Interface, Owned, SafeMath {
     // Total supply
     // ------------------------------------------------------------------------
     function totalSupply() public constant returns (uint) {
-        return _totalSupply  - balances[address(0)];
+        return totalSupply  - balances[address(0)];
     }
 
 
@@ -138,9 +130,11 @@ contract StezyToken is ERC20Interface, Owned, SafeMath {
     // ------------------------------------------------------------------------
     // Transfer the balance from token owner's account to to account
     // - Owner's account must have sufficient balance to transfer
-    // - 0 value transfers are allowed
+    // - 0 value transfers are allowance
     // ------------------------------------------------------------------------
     function transfer(address to, uint tokens) public returns (bool success) {
+    	require(to != address(0));
+    	require(tokens <= balances[msg.sender]);
         balances[msg.sender] = safeSub(balances[msg.sender], tokens);
         balances[to] = safeAdd(balances[to], tokens);
         Transfer(msg.sender, to, tokens);
@@ -157,7 +151,7 @@ contract StezyToken is ERC20Interface, Owned, SafeMath {
     // as this should be implemented in user interfaces 
     // ------------------------------------------------------------------------
     function approve(address spender, uint tokens) public returns (bool success) {
-        allowed[msg.sender][spender] = tokens;
+        allowance[msg.sender][spender] = tokens;
         Approval(msg.sender, spender, tokens);
         return true;
     }
@@ -170,11 +164,14 @@ contract StezyToken is ERC20Interface, Owned, SafeMath {
     // for spending from the from account and
     // - From account must have sufficient balance to transfer
     // - Spender must have sufficient allowance to transfer
-    // - 0 value transfers are allowed
+    // - 0 value transfers are allowance
     // ------------------------------------------------------------------------
     function transferFrom(address from, address to, uint tokens) public returns (bool success) {
+    	require(to != address(0));
+    	require(tokens <= balances[from]);
+    	require(tokens <= allowance[from][msg.sender]);
         balances[from] = safeSub(balances[from], tokens);
-        allowed[from][msg.sender] = safeSub(allowed[from][msg.sender], tokens);
+        allowance[from][msg.sender] = safeSub(allowance[from][msg.sender], tokens);
         balances[to] = safeAdd(balances[to], tokens);
         Transfer(from, to, tokens);
         return true;
@@ -186,35 +183,16 @@ contract StezyToken is ERC20Interface, Owned, SafeMath {
     // transferred to the spender's account
     // ------------------------------------------------------------------------
     function allowance(address tokenOwner, address spender) public constant returns (uint remaining) {
-        return allowed[tokenOwner][spender];
-    }
-
-
-    // ------------------------------------------------------------------------
-    // Token owner can approve for spender to transferFrom(...) tokens
-    // from the token owner's account. The spender contract function
-    // receiveApproval(...) is then executed
-    // ------------------------------------------------------------------------
-    function approveAndCall(address spender, uint tokens, bytes data) public returns (bool success) {
-        allowed[msg.sender][spender] = tokens;
-        Approval(msg.sender, spender, tokens);
-        ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, this, data);
-        return true;
+        return allowance[tokenOwner][spender];
     }
 
 
     // ------------------------------------------------------------------------
     // Don't accept ETH
+    //This contact is not meant to accept ethers so in case someone sends by mistake then it should be reverted
     // ------------------------------------------------------------------------
     function () public payable {
         revert();
     }
 
-
-    // ------------------------------------------------------------------------
-    // Owner can transfer out any accidentally sent ERC20 tokens
-    // ------------------------------------------------------------------------
-    function transferAnyERC20Token(address tokenAddress, uint tokens) public onlyOwner returns (bool success) {
-        return ERC20Interface(tokenAddress).transfer(owner, tokens);
-    }
 }
